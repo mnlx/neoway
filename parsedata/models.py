@@ -3,12 +3,15 @@ from django.db import models
 
 # Create your models here.
 class UserPurchase(models.Model):
-    cpf = models.CharField(max_length=15)
-    private = models.BooleanField()
-    incompleto = models.BooleanField()
-    data_ultima_compra = models.DateField()
-    ticket_medio = models.FloatField()
-    ticket_ultima_compra = models.FloatField()
-    loja_mais_frequente = models.CharField(max_length=18)
-    loja_ultima_compra = models.CharField(max_length=18)
-    cpf_invalido = models.BooleanField()
+    cpf = models.CharField(null=False, max_length=20, unique=True)
+    private = models.BooleanField(null=True,)
+    incompleto = models.BooleanField(null=True,)
+    data_ultima_compra = models.DateField(null=True,)
+    ticket_medio = models.FloatField(null=True,)
+    ticket_ultima_compra = models.FloatField(null=True,)
+    loja_mais_frequente = models.CharField(null=True,max_length=20)
+    loja_ultima_compra = models.CharField(null=True,max_length=20)
+    cpf_valido = models.BooleanField(null=True)
+    cnpj_loja_mais_frequente_valida = models.BooleanField(null=True)
+    cnpj_loja_ultima_compra_valida = models.BooleanField(null=True)
+
