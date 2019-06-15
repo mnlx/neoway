@@ -33,6 +33,8 @@ def verify_cpf(cpf):
             valid_cpf = True
         elif int(cpf[10]) == 11 - remainder:
             valid_cpf = True
+        else:
+            valid_cpf = False
 
     return valid_cpf
 
@@ -69,11 +71,13 @@ def verify_cnpj(cnpj):
             valid_cnpj = True
         elif int(cnpj[13]) == 11 - remainder:
             valid_cnpj = True
+        else:
+            valid_cnpj = False
 
     return valid_cnpj
 
 
-def clean_data(row):
+def clean_data(row, response_json):
     cpf_raw = row[0]
     private_raw = row[1]
     incompleto_raw = row[2]
@@ -88,6 +92,8 @@ def clean_data(row):
     if cpf_raw != b'NULL':
         cleaned_data['cpf'] = cpf_raw.decode('utf-8')
         cleaned_data['cpf_valido'] = verify_cpf(cleaned_data['cpf'])
+        if not cleaned_data['cpf_valido']:
+            response_json['invalid_cpf_count'] += 1
     if private_raw != b'NULL':
         cleaned_data['private'] = not private_raw.find(b'1')
     if incompleto_raw != b'NULL':
@@ -100,9 +106,12 @@ def clean_data(row):
         cleaned_data['ticket_ultima_compra'] = float(re.sub(b',', b'.', ticket_ultima_compra_raw))
     if loja_mais_frequente_raw != b'NULL':
         cleaned_data['loja_mais_frequente'] = loja_mais_frequente_raw.decode('utf-8')
-        cleaned_data['cnpj_loja_mais_frequente_valida'] = verify_cnpj(cleaned_data['loja_mais_frequente'])
+        cleaned_data['cnpj_loja_mais_frequente_valido'] = verify_cnpj(cleaned_data['loja_mais_frequente'])
+        if not cleaned_data['cnpj_loja_mais_frequente_valido']:
+            response_json['invalid_loja_mais_frequente'] += 1
     if loja_ultima_compra_raw != b'NULL':
         cleaned_data['loja_ultima_compra'] = loja_ultima_compra_raw.decode('utf-8')
-        cleaned_data['cnpj_loja_ultima_compra_valida'] = verify_cnpj(cleaned_data['loja_ultima_compra'])
-
+        cleaned_data['cnpj_loja_ultima_compra_valido'] = verify_cnpj(cleaned_data['loja_ultima_compra'])
+        if not cleaned_data['cnpj_loja_ultima_compra_valido']:
+            response_json['invalid_loja_ultima_compra'] += 1
     return cleaned_data
