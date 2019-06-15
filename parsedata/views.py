@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -144,6 +145,9 @@ def file_parser(request):
         user_purchase = UserPurchase(**clean_data(row))
         cleaned_data.append(user_purchase)
 
-    UserPurchase.objects.bulk_create(cleaned_data)
+    try:
+        UserPurchase.objects.bulk_create(cleaned_data)
+    except IntegrityError as e:
+        response_json = {'error': e.args[0]}
 
     return JsonResponse(response_json)
