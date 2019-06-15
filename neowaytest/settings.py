@@ -25,7 +25,7 @@ SECRET_KEY = 'x10w1r^ef(yvj=l#_*za30se#zvedpga49xv+d1y=5igzw50k%'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['0.0.0.0']
 
 
 # Application definition
@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'parsedata'
 ]
 
 MIDDLEWARE = [
@@ -76,11 +77,17 @@ WSGI_APPLICATION = 'neowaytest.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'neoway',
+        'USER': 'neoway',
+        'PASSWORD': 'Frenetico1',
+        'HOST': 'neoway.cbabyxdlckzg.us-east-1.rds.amazonaws.com',
+        'PORT': '5432',
     }
 }
 
+# TODO: passar dados de conexão do DB para .env
+# TODO: change db password
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
