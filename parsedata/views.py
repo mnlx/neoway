@@ -25,16 +25,18 @@ def file_parser(request):
     cleaned_data = []
 
     for i, row in enumerate(base_teste_file):
+        # Pula primeira linha que contém os nomes das colunas
         if i == 0:
             continue
 
         row = row.split()
 
+        # Linhas com mais ou menos 8 colunas não são adicionados
         if len(row) != 8:
             response_json['wrong_column_count'] += 1
             continue
 
-        user_purchase = UserPurchase(**clean_data(row))
+        user_purchase = UserPurchase(**clean_data(row, response_json))
         cleaned_data.append(user_purchase)
 
     try:
