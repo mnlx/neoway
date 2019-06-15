@@ -12,6 +12,6 @@ class UserPurchase(models.Model):
     loja_mais_frequente = models.CharField(null=True,max_length=20)
     loja_ultima_compra = models.CharField(null=True,max_length=20)
     cpf_valido = models.BooleanField(null=True)
-    cnpj_loja_mais_frequente_valida = models.BooleanField(null=True)
-    cnpj_loja_ultima_compra_valida = models.BooleanField(null=True)
+    cnpj_loja_mais_frequente_valido = models.BooleanField(null=True)
+    cnpj_loja_ultima_compra_valido = models.BooleanField(null=True)
 
