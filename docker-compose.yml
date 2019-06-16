@@ -1,0 +1,18 @@
+version: '3.3'
+
+services:
+  web:
+    build: .
+    command: python3 app.py
+    ports:
+      - 5000:5000
+  rabbit:
+    image: rabbitmq:3
+    ports:
+      - 5672:5672
+  worker1:
+    build: worker
+    command: python3 worker.py
+
+
+
