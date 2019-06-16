@@ -115,3 +115,41 @@ def clean_data(row, response_json):
         if not cleaned_data['cnpj_loja_ultima_compra_valido']:
             response_json['invalid_loja_ultima_compra'] += 1
     return cleaned_data
+
+
+def create_bulk_insert_sql(rows):
+    insert_format_string = "('{0}', {1}, {2}, {3}, {4}, {5}, '{6}', '{7}', {8}, {9}, {10})"
+    inserts_list = [
+        insert_format_string.format('cpf' in row and row['cpf'] or 'NULL',
+                                    'private' in row and row['private'] or 'NULL',
+                                    'incompleto' in row and row['incompleto'] or 'NULL',
+                                    'data_ultima_compra' in row and "'" + row[
+                                        'data_ultima_compra'] + "'::timestamp" or 'NULL',
+                                    'ticket_medio' in row and row['ticket_medio'] or 'NULL',
+                                    'ticket_ultima_compra' in row and row['ticket_ultima_compra'] or 'NULL',
+                                    'loja_mais_frequente' in row and row['loja_mais_frequente'] or 'NULL',
+                                    'loja_ultima_compra' in row and row['loja_ultima_compra'] or 'NULL',
+                                    'cpf_valido' in row and row['cpf_valido'],
+                                    'cnpj_loja_mais_frequente_valido' in row and row[
+                                        'cnpj_loja_mais_frequente_valido'] or 'NULL',
+                                    'cnpj_loja_ultima_compra_valido' in row and row[
+                                        'cnpj_loja_ultima_compra_valido'] or 'NULL').replace("'NULL'", 'NULL')
+        for row in rows
+    ]
+
+    sql = '''INSERT INTO user_purchase (cpf, private, incompleto, data_ultima_compra, ticket_medio, 
+    ticket_ultima_compra, loja_mais_frequente, loja_ultima_compra, cpf_valido, cnpj_loja_mais_frequente_valido, 
+    cnpj_loja_ultima_compra_valido) VALUES ''' + ','.join(inserts_list)
+    return sql
+
+
+def create_log_sql(message_id, status, message, part, total_parts):
+    # TODO: include transaction time
+    sql = '''
+      INSERT INTO logs  (message_id , completion_time , status, message, part, total_parts) VALUES 
+      ('{0}', NOW() , '{1}', '{2}', '{3}', '{4}')
+    
+    '''.format(message_id, status, json.dumps(message), part, total_parts)
+
+
+    return sql
