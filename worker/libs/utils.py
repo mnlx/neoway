@@ -1,6 +1,5 @@
 import re
-from datetime import datetime
-
+import json
 
 def verify_cpf(cpf):
     cpf = re.sub(r'\D', '', cpf)
@@ -99,7 +98,8 @@ def clean_data(row, response_json):
     if incompleto_raw != b'NULL':
         cleaned_data['incompleto'] = not incompleto_raw.find(b'1')
     if data_ultima_compra != b'NULL' and len(data_ultima_compra) == 10:
-        cleaned_data['data_ultima_compra'] = datetime.strptime(data_ultima_compra.decode('utf-8'), '%Y-%m-%d')
+        # TODO: checkif datetime
+        cleaned_data['data_ultima_compra'] = data_ultima_compra.decode('utf-8')
     if ticket_medio_raw != b'NULL':
         cleaned_data['ticket_medio'] = float(re.sub(b',', b'.', ticket_medio_raw))
     if ticket_ultima_compra_raw != b'NULL':
