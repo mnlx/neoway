@@ -13,7 +13,8 @@ ENV PYTHONUNBUFFERED 1
 
 
 # copy project
-COPY . /usr/src/neowaytest/
+COPY .. /usr/src/neowaytest/
+COPY ../libs /usr/src/neowaytest/libs
 
 # install dependencies
 #RUN apt update
