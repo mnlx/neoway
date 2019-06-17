@@ -16,21 +16,6 @@ RABBIT_PORT = int(os.getenv('RABBIT_CONTAINER_PORT'))
 
 print('Worker started')
 
-for i in range(5):
-    try:
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host=RABBIT_DNS or 'localhost', port=RABBIT_PORT or 5672))
-        channel = connection.channel()
-        channel.queue_declare(queue='insert_rows_queue', durable=True)
-        break
-    except (AMQPConnectionError, gaierror) as e:
-        print(e.args[0])
-        print('Retrying in 5 seconds')
-        if i != 4:
-            time.sleep(5)
-        else:
-            print('Exceeded retry limit')
-
 
 def callback(ch, method, properties, file_chunk):
     rows = file_chunk.split(b'\n')
@@ -80,6 +65,23 @@ def callback(ch, method, properties, file_chunk):
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
-channel.basic_qos(prefetch_count=1)
-channel.basic_consume(queue='insert_rows_queue', on_message_callback=callback)
-channel.start_consuming()
+for i in range(5):
+    try:
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host=RABBIT_DNS or 'localhost', port=RABBIT_PORT or 5672))
+        channel = connection.channel()
+        channel.queue_declare(queue='insert_rows_queue', durable=True)
+        channel.basic_qos(prefetch_count=1)
+        channel.basic_consume(queue='insert_rows_queue', on_message_callback=callback)
+        channel.start_consuming()
+        break
+    except (AMQPConnectionError, gaierror) as e:
+        print(e.args[0])
+        print('Retrying in 5 seconds')
+        if i != 4:
+            time.sleep(5)
+        else:
+            print('Exceeded retry limit')
+
+
+
