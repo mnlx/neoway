@@ -16,17 +16,18 @@ class Model:
         connection_string = 'postgresql://{0}:{1}@{2}:{3}/{4}'.format(DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME)
         self.engine = create_engine(connection_string)
 
-class LogsModel(Model):
+
+class StatusModel(Model):
 
     def get_message_status(self, message_id):
-        sql = '''SELECT * FROM logs WHERE message_id='{0}';'''.format(message_id)
+        sql = '''SELECT * FROM status WHERE message_id='{0}';'''.format(message_id)
 
         return self.engine.execute(sql)
 
-    def add_log(self, message_id, status, message, part, total_parts):
+    def add_status(self, message_id, status, message, part, total_parts):
         # TODO: include transaction time
         sql = '''
-          INSERT INTO logs  (message_id , completion_time , status, message, part, total_parts) VALUES 
+          INSERT INTO status  (message_id , completion_time , status, message, part, total_parts) VALUES 
           ('{0}', NOW() , '{1}', '{2}', '{3}', '{4}')
     
         '''.format(message_id, status, json.dumps(message), part, total_parts)
