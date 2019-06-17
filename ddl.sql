@@ -22,7 +22,7 @@ CREATE TABLE status (
     message_id VARCHAR(36)  ,
     completion_time TIMESTAMP,
     status queue_worker_status,
-    message jsonb,
+    message JSONB,
     part INT,
     total_parts INT
 );
