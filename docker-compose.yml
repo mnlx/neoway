@@ -8,17 +8,15 @@ services:
     command: gunicorn -b 0.0.0.0:5000 -k sync --workers=3 --log-file error_logs.log --access-logfile acclogs.log --log-level error app:app
     ports:
       - 80:5000
-#      - 5432:5432
     restart: on-failure
   rabbit:
     image: rabbitmq:3
-#    ports:
-#      - 5672:5672
+    ports:
+      - 5672:5672
   worker1:
     build:
       context: .
       dockerfile: ./worker/Dockerfile
     command: python3 worker.py
     restart: on-failure
-#    ports:
-#      - 5432:5432
+

@@ -1,20 +1,35 @@
 import json
+from _socket import gaierror
 import pika
+from pika.exceptions import AMQPConnectionError
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 from libs.utils import clean_data
 from libs.models import StatusModel, UserPurchaseModel
 from dotenv import load_dotenv
 import os
+import time
 
 load_dotenv()
 
 RABBIT_DNS = os.getenv('RABBIT_CONTAINER_DNS')
 RABBIT_PORT = int(os.getenv('RABBIT_CONTAINER_PORT'))
 
-connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host=RABBIT_DNS or 'localhost', port=RABBIT_PORT or 5672))
-channel = connection.channel()
-channel.queue_declare(queue='insert_rows_queue', durable=True)
+print('Worker started')
+
+for i in range(5):
+    try:
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host=RABBIT_DNS or 'localhost', port=RABBIT_PORT or 5672))
+        channel = connection.channel()
+        channel.queue_declare(queue='insert_rows_queue', durable=True)
+        break
+    except (AMQPConnectionError, gaierror) as e:
+        print(e.args[0])
+        print('Retrying in 5 seconds')
+        if i != 4:
+            time.sleep(5)
+        else:
+            print('Exceeded retry limit')
 
 
 def callback(ch, method, properties, file_chunk):
@@ -46,7 +61,7 @@ def callback(ch, method, properties, file_chunk):
 
         # Linhas com mais ou menos 8 colunas não são adicionados
         if len(columns) != 8:
-            status_object['wrong_column_count'] += 1
+            status_object['wrong_columns_count'] += 1
             continue
 
         cleaned_data.append(clean_data(columns, status_object))

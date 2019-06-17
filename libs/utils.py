@@ -92,24 +92,22 @@ def valid_bool(number):
 
 
 def valid_date(date):
-    valid = False
     if len(date) != 10:
         return False
     try:
         datetime.strptime(date.decode('utf-8'), '%Y-%m-%d')
         valid = True
     except ValueError as e:
-        print(e.args[0])
+        valid = False
     return valid
 
 
 def valid_float(number):
-    valid = False
     try:
         float(re.sub(b',', b'.', number))
         valid = True
     except ValueError as e:
-        print(e.args[0])
+        valid = False
     return valid
 
 
