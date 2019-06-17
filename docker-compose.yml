@@ -7,12 +7,14 @@ services:
       dockerfile: ./web/Dockerfile
     command: gunicorn -b 0.0.0.0:5000 -k sync --workers=3 --log-file error_logs.log --access-logfile acclogs.log --log-level error app:app
     ports:
+      - 5432:5432
       - 80:5000
     restart: on-failure
   rabbit:
     image: rabbitmq:3
     ports:
       - 5672:5672
+      - 5432:5432
   worker1:
     build:
       context: .
