@@ -1,7 +1,11 @@
 import re
-import json
+from datetime import datetime
+
 
 def verify_cpf(cpf):
+    """
+    CPF numbers follow mathematical equations. This function checks if the numbers are valid.
+    """
     cpf = re.sub(r'\D', '', cpf)
 
     if len(cpf) != 11:
@@ -39,6 +43,9 @@ def verify_cpf(cpf):
 
 
 def verify_cnpj(cnpj):
+    """
+    CNPJ numbers follow mathematical equations. This function checks if the numbers are valid.
+    """
     cnpj = re.sub(r'\D', '', cnpj)
     valid_cnpj = False
 
@@ -76,7 +83,40 @@ def verify_cnpj(cnpj):
     return valid_cnpj
 
 
-def clean_data(row, response_json):
+def valid_bool(number):
+    valid = False
+    if number.count(b'1') == 1 or number.count(b'0') == 1:
+        valid = True
+
+    return valid
+
+
+def valid_date(date):
+    valid = False
+    if len(date) != 10:
+        return False
+    try:
+        datetime.strptime(date.decode('utf-8'), '%Y-%m-%d')
+        valid = True
+    except ValueError as e:
+        print(e.args[0])
+    return valid
+
+
+def valid_float(number):
+    valid = False
+    try:
+        float(re.sub(b',', b'.', number))
+        valid = True
+    except ValueError as e:
+        print(e.args[0])
+    return valid
+
+
+def clean_data(row, status_object):
+    """
+    Cleans and validates the data for each of the columns in the row.
+    """
     cpf_raw = row[0]
     private_raw = row[1]
     incompleto_raw = row[2]
@@ -88,68 +128,39 @@ def clean_data(row, response_json):
 
     cleaned_data = {}
 
+    # Verificação do CPF
     if cpf_raw != b'NULL':
         cleaned_data['cpf'] = cpf_raw.decode('utf-8')
         cleaned_data['cpf_valido'] = verify_cpf(cleaned_data['cpf'])
         if not cleaned_data['cpf_valido']:
-            response_json['invalid_cpf_count'] += 1
-    if private_raw != b'NULL':
-        cleaned_data['private'] = not private_raw.find(b'1')
-    if incompleto_raw != b'NULL':
-        cleaned_data['incompleto'] = not incompleto_raw.find(b'1')
-    if data_ultima_compra != b'NULL' and len(data_ultima_compra) == 10:
-        # TODO: checkif datetime
+            status_object['invalid_cpf_count'] += 1
+
+    # Verificação dos booleanos
+    if valid_bool(private_raw):
+        cleaned_data['private'] = private_raw.count(b'1') == 1
+    if valid_bool(incompleto_raw):
+        cleaned_data['incompleto'] = incompleto_raw.count(b'1') == 1
+
+    # Verificação da data da última compra
+    if valid_date(data_ultima_compra):
         cleaned_data['data_ultima_compra'] = data_ultima_compra.decode('utf-8')
-    if ticket_medio_raw != b'NULL':
+
+    # Verificação preço dos tickets
+    if valid_float(ticket_medio_raw):
         cleaned_data['ticket_medio'] = float(re.sub(b',', b'.', ticket_medio_raw))
-    if ticket_ultima_compra_raw != b'NULL':
+    if valid_float(ticket_ultima_compra_raw):
         cleaned_data['ticket_ultima_compra'] = float(re.sub(b',', b'.', ticket_ultima_compra_raw))
+
+    # Verificação CNPJ das lojas
     if loja_mais_frequente_raw != b'NULL':
         cleaned_data['loja_mais_frequente'] = loja_mais_frequente_raw.decode('utf-8')
         cleaned_data['cnpj_loja_mais_frequente_valido'] = verify_cnpj(cleaned_data['loja_mais_frequente'])
         if not cleaned_data['cnpj_loja_mais_frequente_valido']:
-            response_json['invalid_loja_mais_frequente'] += 1
+            status_object['invalid_loja_mais_frequente'] += 1
     if loja_ultima_compra_raw != b'NULL':
         cleaned_data['loja_ultima_compra'] = loja_ultima_compra_raw.decode('utf-8')
         cleaned_data['cnpj_loja_ultima_compra_valido'] = verify_cnpj(cleaned_data['loja_ultima_compra'])
         if not cleaned_data['cnpj_loja_ultima_compra_valido']:
-            response_json['invalid_loja_ultima_compra'] += 1
+            status_object['invalid_loja_ultima_compra'] += 1
+
     return cleaned_data
-
-
-def create_bulk_insert_sql(rows):
-    insert_format_string = "('{0}', {1}, {2}, {3}, {4}, {5}, '{6}', '{7}', {8}, {9}, {10})"
-    inserts_list = [
-        insert_format_string.format('cpf' in row and row['cpf'] or 'NULL',
-                                    'private' in row and row['private'] or 'NULL',
-                                    'incompleto' in row and row['incompleto'] or 'NULL',
-                                    'data_ultima_compra' in row and "'" + row[
-                                        'data_ultima_compra'] + "'::timestamp" or 'NULL',
-                                    'ticket_medio' in row and row['ticket_medio'] or 'NULL',
-                                    'ticket_ultima_compra' in row and row['ticket_ultima_compra'] or 'NULL',
-                                    'loja_mais_frequente' in row and row['loja_mais_frequente'] or 'NULL',
-                                    'loja_ultima_compra' in row and row['loja_ultima_compra'] or 'NULL',
-                                    'cpf_valido' in row and row['cpf_valido'],
-                                    'cnpj_loja_mais_frequente_valido' in row and row[
-                                        'cnpj_loja_mais_frequente_valido'] or 'NULL',
-                                    'cnpj_loja_ultima_compra_valido' in row and row[
-                                        'cnpj_loja_ultima_compra_valido'] or 'NULL').replace("'NULL'", 'NULL')
-        for row in rows
-    ]
-
-    sql = '''INSERT INTO user_purchase (cpf, private, incompleto, data_ultima_compra, ticket_medio, 
-    ticket_ultima_compra, loja_mais_frequente, loja_ultima_compra, cpf_valido, cnpj_loja_mais_frequente_valido, 
-    cnpj_loja_ultima_compra_valido) VALUES ''' + ','.join(inserts_list)
-    return sql
-
-
-def create_log_sql(message_id, status, message, part, total_parts):
-    # TODO: include transaction time
-    sql = '''
-      INSERT INTO logs  (message_id , completion_time , status, message, part, total_parts) VALUES 
-      ('{0}', NOW() , '{1}', '{2}', '{3}', '{4}')
-    
-    '''.format(message_id, status, json.dumps(message), part, total_parts)
-
-
-    return sql
