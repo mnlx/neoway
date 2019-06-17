@@ -17,12 +17,10 @@ $: git clone git@github.com:mnlx/neoway.git
 ```
 
 ##### Step 2:
-Rode o ddl e gere as tabelas necessárias. 
-
-nome arquivo: ddl.sql
+Rode o arquivo ***ddl.sql*** para gerar as tabelas necessárias. 
 
 ##### Step 3:
-Crie dois arquivos .env, e adiciona eles nas pastas dos containers web e worker. A estrutura das pastas deverá ser a seguinte:
+Crie dois arquivos .env, e adicione eles nas pastas dos containers web e worker. A estrutura das pastas deverá ser a seguinte:
 ```
 web/.env
 worker/.env
@@ -42,16 +40,16 @@ RABBIT_CONTAINER_DNS=localhost
 RABBIT_CONTAINER_PORT=5672
 ```
 ##### Step 4:
-Rode o docker-compose up com a flag build para construir e rodar os containers
+Rode o comando ***docker-compose up*** com a flag build para construir e rodar os containers
 ```sh
 $: docker-compose up -d --build 
 ```
-Esse commando faz o build dos cointainers toda vez que ele for executado. Se o build já tiver sido feito, ou se trocar o build no compose por uma imagem, a flag --build já não se torna mais necessária.
+Esse commando faz o build dos cointainers toda vez que ele for executado. Se o build já tiver sido feito, ou se trocar o build no compose por uma imagem, a flag ***--build*** já não se torna mais necessária.
 
 ##### Step 5:
-Com os containers rodando, da para começar a utilizar o serviço. O serviço foi implementado para rodar em duas etapas. A primeira etapa consiste em enviar o arquivo que é para ser inserido no banco para o servidor, o servidor então distribui o processamento para os workers que estiverem conectados através do RabbitMQ. Estes trabalhadores limpam os dados e verificam qualquer inconsistência e depois inserem os dados no banco.
+Com os containers rodando, dá para começar a utilizar o serviço. O serviço foi implementado para rodar em duas etapas. A primeira etapa consiste em enviar o arquivo para o servidor, o servidor então divide esse arquivo em várias partes e envia essas partes para os workers que estiverem conectados através do RabbitMQ. Estes trabalhadores limpam os dados e verificam qualquer inconsistência e depois inserem os dados no banco.
 
-Abaixo segue um exemplo de como que pode ser feito esse upload, aqui eu uso curl, mas qualquer ferramenta que consiga fazer POST de arquivo deverá funcionar.
+Abaixo segue um exemplo de como enviar o arquivo para o servidor, aqui eu uso curl, mas qualquer ferramenta que consiga fazer POST multipart de arquivo deverá funcionar.
 ```sh
 curl -F base_teste=@./base_teste.txt http://0.0.0.0
 ```
@@ -88,18 +86,16 @@ As arrays de sucesso dão bastante detalhes sobre os dados inseridos. É importa
 {"message":{"invalid_cpf_count":1,"invalid_date":0,"invalid_loja_mais_frequente":0,"invalid_loja_ultima_compra":0,"total_added":10000,"total_rows":10000,"wrong_columns_count":0},"part":1,"status":"success"}
 ````
 
-Como se pode notar, a array retorna o número de cpfs e cnpjs inválidos; o total de linhas recebidas e o total dessas que foram inseridas; e as linhas que tinham colunas a mais ou a menos do que esperado. Esses dados são importantes porque se por exemplo a inserção for bem sucedida, mas houver um grande número de falhas, nas contagens das colunas por exemplo, então pode ser que tenha algo de errado com os dados do arquivo. 
+Como se pode notar, a array retorna o número de cpfs e cnpjs inválidos; o total de linhas recebidas e o total dessas que foram inseridas; e as linhas que tinham colunas a mais ou a menos do que esperado. Esses dados são importantes porque s,e por exemplo, a inserção for bem sucedida, mas houver um grande número de falhas nas contagens das colunas, então pode ser que tenha algo de errado com os dados no arquivo ou o serviço precisa ser corrigido. 
 
 
 ### O motivo de algumas escolhas:
 
 A biblioteca psycopg2-binary utilizada para conectar com o banco Postgres não é recomendada em produção, o ideal é que o build da biblioteca seja feito na máquina na qual o serviço vai rodar. O não uso da biblioteca se deu por causa de tempo.
 
-O uso de um message broker, neste caso RabbitMQ, se deu por motivos de performance. Ele facilita a paralelização de execução e por isso aumentar a velocidade de inserção de dados no banco. O arquivo teste só tem 50 mil linhas, portanto o efeito não é tão significativo, mas se o serviço fosse utilizado com arquivos bem maiores, o tempo de execução seria bem reduzido. A divisão do arquivo em várias partes que serão enviadas ao broker tem outra vantagem, ela reduz o tamanho dos batch inserts, que quando demasiadamente grandes podem sobrecarregar o banco.
+O uso de um message broker, neste caso RabbitMQ, se deu por motivos de performance. Ele facilita a paralelização de execução e por isso aumenta a velocidade de inserção de dados no banco. O arquivo teste só tem 50 mil linhas, portanto o efeito não é tão significativo, mas se o serviço fosse utilizado com arquivos bem maiores, o tempo de execução seria bem reduzido. A divisão do arquivo em várias partes que serão enviadas ao broker tem outra vantagem, ela reduz o tamanho dos batch inserts, que quando demasiadamente grandes podem sobrecarregar o banco.
 
 O arquivo docker-compose.yml foi simplificado para rodar com Postgres na máquina local. Por isso que o network mode está como host. Caso não estivesse assim, o banco teria que ser configurado para aceitar conexões de fora. O ideal seria acessar o banco sem que o localhost fosse compartilhado. Para isso poderia adicionar o script ***docker-entrypoint.sh*** que está de exemplo no repositório. Ele altera o arquivo ***/etc/hosts*** e adiciona um dns padrão de acesso ao host, neste caso ***host.docker.internal***.
 
-Faltou realizar testes unitários, isso se deu por motivos de tempo.
-
-Por último, a melhor escolha para rodar o serviço nos containers seria utilizar um swarm que ajustasse a quantidade dos de containers por serviço a medida que a utilização de um aumentasse. Por motivo de tempo, eu resolvi simplificar e deixar os containers estáticos, e duplicar a criação dos containers de trabalho.
+Por último, ficaram algumas coisas pendentes que melhorariam o serviço. Uma delas seria utilizar um swarm para escalar o serviço em períodos de pico. Os testes unitários também não puderam ser feitos. Ambos não puderam ser feitos por motivo de tempo.
 
