@@ -2,17 +2,20 @@ version: '3.3'
 
 services:
   web:
-    build: .
-    command: python3 app.py
+    build:
+      context: .
+      dockerfile: ./web/Dockerfile
+    command: gunicorn -b 0.0.0.0:5000 -k sync --workers=3 --log-file error_logs.log --access-logfile acclogs.log --log-level error app:app
     ports:
-      - 5000:5000
+      - 80:5000
+    restart: on-failure
   rabbit:
     image: rabbitmq:3
     ports:
       - 5672:5672
   worker1:
-    build: worker
+    build:
+      context: .
+      dockerfile: ./worker/Dockerfile
     command: python3 worker.py
-
-
-
+    restart: on-failure

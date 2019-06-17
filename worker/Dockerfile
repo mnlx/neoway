@@ -8,14 +8,11 @@ WORKDIR /usr/src/worker
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-
 # copy project
-COPY . /usr/src/worker/
+COPY ./worker /usr/src/worker/
+COPY ./libs /usr/src/worker/libs
 
 # install dependencies
-#RUN apt update
-#RUN apt upgrade -y
-#RUN apt install -y python3 python3-pip
 RUN apk update && apk add postgresql-dev gcc python3-dev musl-dev
 RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt
